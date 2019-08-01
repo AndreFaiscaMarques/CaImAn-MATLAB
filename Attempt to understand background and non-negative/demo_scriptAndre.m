@@ -4,15 +4,14 @@ gcp;                            % start cluster
 % addpath(genpath('utilities'));
 % addpath(genpath('deconvolution'));
   
-% nam =  'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\190523_01_10Ch1.tif';          % insert path to tiff stack here
+% nam =  'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\190523_01_10Ch1video.mat';          % insert path to tiff stack here
 nam = 'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Mert\190518\1\f3_t2MovCorr.mat';
 sframe=1;						% user input: first frame to read (optional, default 1)
 % num2read=2000;					% user input: how many frames to read   (optional, default until the end)
 % Y = read_file(nam,sframe,num2read);
-
 % Y = read_file(nam,sframe);
 
-load(nam);
+ load(nam);
 Y = Aout_All;
 
 %Y = Y - min(Y(:)); 
@@ -38,10 +37,10 @@ d = d1*d2;                                          % total number of pixels
 %     'nb',1,...                                  % number of background components    
 %     'min_SNR',10,...                             % minimum SNR threshold
 %     'space_thresh',10,...                      % space correlation threshold
-%     'cnn_thr',0.2...                            % threshold for CNN classifier    
+%     'cnn_thr',0.2...                             % threshold for CNN classifier    
 %     );
 
-K = 40;                                           % number of components to be found
+K = 40;                                            % number of components to be found
 tau = 60;                                          % std of gaussian kernel (half size of neuron) 
 p = 2;                                            
 
@@ -49,12 +48,23 @@ options = CNMFSetParms(...
     'd1',d1,'d2',d2,...                         % dimensionality of the FOV
     'p',p,...                                   % order of AR dynamics    
     'gSig',tau,...                              % half size of neuron
-    'merge_thr',0.5,...                        % merging threshold  
+    'merge_thr',0.15,...                        % merging threshold  
     'nb',2,...                                  % number of background components    
     'min_SNR',10,...                             % minimum SNR threshold
     'space_thresh',0.25,...                      % space correlation threshold
     'cnn_thr',0.2...                            % threshold for CNN classifier    
     );
+
+% options = CNMFSetParms(...   
+%     'd1',d1,'d2',d2,...                         % dimensionality of the FOV
+%     'p',p,...                                   % order of AR dynamics    
+%     'gSig',tau,...                              % half size of neuron
+%     'merge_thr',0.15,...                        % merging threshold  
+%     'nb',2,...                                  % number of background components    
+%     'min_SNR',5,...                             % minimum SNR threshold
+%     'space_thresh',0.5,...                      % space correlation threshold
+%     'cnn_thr',0.2...                            % threshold for CNN classifier    
+%     );
 %% Data pre-processing
 
 [P,Y] = preprocess_data(Y,p);
@@ -177,3 +187,5 @@ end
 % end
 
 % save('190704_01_01Plotting.mat','Yr','A_or','C_or','b2','f2','Cn','options','Cn','Coor');
+
+% save('C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\Output\190523_01_10\190523_01_10Calman.mat')

@@ -4,60 +4,91 @@ gcp;                            % start cluster
 % addpath(genpath('utilities'));
 % addpath(genpath('deconvolution'));
   
-% nam =  'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\190523_01_10Ch1.tif';          % insert path to tiff stack here
-nam = 'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Mert\190518\1\f3_t2MovCorr.mat';
+ nam =  'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\190815_01_01_Ch1_rigid.mat';          % insert path to tiff stack here
+% nam = 'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Mert\190518\1\f3_t2MovCorr.mat';
 sframe=1;						% user input: first frame to read (optional, default 1)
 % num2read=2000;					% user input: how many frames to read   (optional, default until the end)
 % Y = read_file(nam,sframe,num2read);
-
-% Y = read_file(nam,sframe);
+%  Y = read_file(nam,sframe);
 
 load(nam);
-Y = Aout_All;
+try
+    Y = Aout_rigid_All;
+catch
+    Y = Aout_All;
+end
+% Y = Aout_rigid_All;
 
 %Y = Y - min(Y(:)); 
 if ~isa(Y,'single');    Y = single(Y);  end         % convert to single
 
 
+% Run the motion correction algorithm
+
+% [Yrigid, Ynonrigid] = NorMCorreAndre(Yraw);
+% 
+% Y = Yrigid;
+
+
 % Y(93,74,1067) = 0;
 
-[d1,d2,T] = size(Y);                                % dimensions of dataset
+[d1,d2,T] = size(Y);                               % dimensions of dataset
 d = d1*d2;                                          % total number of pixels
 
+% add a 'star' like pixel, to fool the background system
+% Y(93,74,1067) = 10000;
+%
 %% Set parameters
+K = 40;                                           % number of components to be foundG@~)G>OL
+tau = 40;                                          % std of gaussian kernel (half size of neuron) 
+pAR = 2;
 
+options = CNMFSetParms(...   
+    'd1',d1,'d2',d2,...                         % dimensionality of the FOV
+    'p',pAR,...                                   % order of AR dynamics    
+    'gSig',tau,...                              % half size of neucenterron
+    'merge_thr',0.15,...                        % merging threshold  
+    'nb',1,...                                  % number of background components    
+    'min_SNR',5,...                             % minimum SNR threshold
+    'space_thresh',0.5,...                      % space correlation threshold
+    'cnn_thr',0.2 ...                            % threshold for CNN classifier    
+    );
+
+%-optimized- values for Mert
+
+% K = 40;                                           % number of components to be foundG@~)G>OL
+% tau = 40;                                          % std of gaussian kernel (half size of neuron) 
+% p = 2;
+% 
+% options = CNMFSetParms(...   
+%     'd1',d1,'d2',d2,...                         % dimensionality of the FOV
+%     'p',p,...                                   % order of AR dynamics    
+%     'gSig',tau,...                              % half size of neucenterron
+%     'merge_thr',0.015,...                        % merging threshold  
+%     'nb',3,...                                  % number of background components    
+%     'min_SNR',3,...                             % minimum SNR threshold
+%     'space_thresh',5,...                      % space correlation threshold
+%     'cnn_thr',0.2 ...                            % threshold for CNN classifier    
+%     );
+
+% Demo values
 % K = 40;                                           % number of components to be found
-% tau = 20;                                          % std of gaussian kernel (half size of neuron) 
+% tau = 40;                                          % std of gaussian kernel (half size of neuron) 
 % p = 2;
 % 
 % options = CNMFSetParms(...   
 %     'd1',d1,'d2',d2,...                         % dimensionality of the FOV
 %     'p',p,...                                   % order of AR dynamics    
 %     'gSig',tau,...                              % half size of neuron
-%     'merge_thr',0.1,...                        % merging threshold  
-%     'nb',1,...                                  % number of background components    
-%     'min_SNR',10,...                             % minimum SNR threshold
-%     'space_thresh',10,...                      % space correlation threshold
+%     'merge_thr',0.80,...                        % merging threshold  
+%     'nb',2,...                                  % number of background components    
+%     'min_SNR',3,...                             % minimum SNR threshold
+%     'space_thresh',0.5,...                      % space correlation threshold
 %     'cnn_thr',0.2...                            % threshold for CNN classifier    
 %     );
-
-K = 40;                                           % number of components to be found
-tau = 60;                                          % std of gaussian kernel (half size of neuron) 
-p = 2;                                            
-
-options = CNMFSetParms(...   
-    'd1',d1,'d2',d2,...                         % dimensionality of the FOV
-    'p',p,...                                   % order of AR dynamics    
-    'gSig',tau,...                              % half size of neuron
-    'merge_thr',0.5,...                        % merging threshold  
-    'nb',2,...                                  % number of background components    
-    'min_SNR',10,...                             % minimum SNR threshold
-    'space_thresh',0.25,...                      % space correlation threshold
-    'cnn_thr',0.2...                            % threshold for CNN classifier    
-    );
 %% Data pre-processing
 
-[P,Y] = preprocess_data(Y,p);
+[P,Y] = preprocess_data(Y,pAR);
 %% fast initialization of spatial components using greedyROI and HALS
 
 [Ain,Cin,bin,fin,center] = initialize_components(Y,K,tau,options,P);  % initialize
@@ -111,16 +142,16 @@ keep = (ind_corr | ind_cnn) & ind_exc;
 %% display kept and discarded components
 A_keep = A(:,keep);
 C_keep = C(keep,:);
-figure;
-    subplot(121); montage(extract_patch(A(:,keep),[d1,d2],[30,30]),'DisplayRange',[0,0.15]);
-        title('Kept Components');
-    subplot(122); montage(extract_patch(A(:,~keep),[d1,d2],[30,30]),'DisplayRange',[0,0.15])
-        title('Discarded Components');
+% figure;
+%     subplot(121); montage(extract_patch(A(:,keep),[d1,d2],[30,30]),'DisplayRange',[0,0.15]);
+%         title('Kept Components');
+%     subplot(122); montage(extract_patch(A(:,~keep),[d1,d2],[30,30]),'DisplayRange',[0,0.15])
+%         title('Discarded Components');
 %% merge found components
 [Am,Cm,K_m,merged_ROIs,Pm,Sm] = merge_components(Yr,A_keep,b,C_keep,f,P,S,options);
 
 %%
-display_merging = 1; % flag for displaying merging example
+display_merging = 0; % flag for displaying merging example
 if and(display_merging, ~isempty(merged_ROIs))
     i = 1; %randi(length(merged_ROIs));
     ln = length(merged_ROIs{i});
@@ -141,7 +172,7 @@ end
 
 %% refine estimates excluding rejected components
 
-Pm.p = p;    % restore AR value
+Pm.p = pAR;    % restore AR value
 [A2,b2,C2] = update_spatial_components(Yr,Cm,f,[Am,b],Pm,options);
 [C2,f2,P2,S2,YrA2] = update_temporal_components(Yr,A2,b2,C2,f,Pm,options);
 
@@ -177,3 +208,5 @@ end
 % end
 
 % save('190704_01_01Plotting.mat','Yr','A_or','C_or','b2','f2','Cn','options','Cn','Coor');
+
+% save('C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\Output\190523_01_10Ch1Calman_015mergethr2nb.mat')

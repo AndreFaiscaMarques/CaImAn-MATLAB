@@ -3,21 +3,23 @@ clear;
 gcp;                            % start cluster
 % addpath(genpath('utilities'));
 % addpath(genpath('deconvolution'));
-  
- nam =  'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\190815_01_01_Ch1_rigid.mat';          % insert path to tiff stack here
-% nam = 'C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Mert\190518\1\f3_t2MovCorr.mat';
+FlyID = '191112_MovCorr';
+% nam = ['C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R50G03\191001_02\',FlyID,'.mat'];
+ nam =  ['C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\',FlyID,'.mat'];          % insert path to tiff stack here 
+% nam = ['C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Mert\',FlyID,'.mat'];
 sframe=1;						% user input: first frame to read (optional, default 1)
 % num2read=2000;					% user input: how many frames to read   (optional, default until the end)
 % Y = read_file(nam,sframe,num2read);
 %  Y = read_file(nam,sframe);
 
 load(nam);
+
 try
     Y = Aout_rigid_All;
+%     Y = Aout_nonrigid_All;
 catch
     Y = Aout_All;
 end
-% Y = Aout_rigid_All;
 
 %Y = Y - min(Y(:)); 
 if ~isa(Y,'single');    Y = single(Y);  end         % convert to single
@@ -39,6 +41,7 @@ d = d1*d2;                                          % total number of pixels
 % Y(93,74,1067) = 10000;
 %
 %% Set parameters
+
 K = 40;                                           % number of components to be foundG@~)G>OL
 tau = 40;                                          % std of gaussian kernel (half size of neuron) 
 pAR = 2;
@@ -48,7 +51,7 @@ options = CNMFSetParms(...
     'p',pAR,...                                   % order of AR dynamics    
     'gSig',tau,...                              % half size of neucenterron
     'merge_thr',0.15,...                        % merging threshold  
-    'nb',1,...                                  % number of background components    
+    'nb',2,...                                  % number of background components    
     'min_SNR',5,...                             % minimum SNR threshold
     'space_thresh',0.5,...                      % space correlation threshold
     'cnn_thr',0.2 ...                            % threshold for CNN classifier    
@@ -67,7 +70,7 @@ options = CNMFSetParms(...
 %     'merge_thr',0.015,...                        % merging threshold  
 %     'nb',3,...                                  % number of background components    
 %     'min_SNR',3,...                             % minimum SNR threshold
-%     'space_thresh',5,...                      % space correlation threshold
+%     'space_thresh',0.5,...                      % space correlation threshold
 %     'cnn_thr',0.2 ...                            % threshold for CNN classifier    
 %     );
 
@@ -188,7 +191,7 @@ figure;
 %savejson('jmesh',json_file,'filename');        % optional save json file with component coordinates (requires matlab json library)
 
 %% display components
-
+Yr = reshape(Y,d,T);
 plot_components_GUI(Yr,A_or,C_or,b2,f2,Cn,options);
 
             
@@ -196,6 +199,8 @@ plot_components_GUI(Yr,A_or,C_or,b2,f2,Cn,options);
 if (0)  
     make_patch_video(A_or,C_or,b2,f2,Yr,Coor,options)
 end
+
+save(['C:\Users\ChiappeLab\Dropbox (Sensorimotor)\ChiappeLabNew\data\ANDRE\Calcium Imaging\Test Images\Wynne\R11R12 (ring)\Pooled Angular Trials\Output\',FlyID,'_CalmanWynneOptimized'])
 
 %% get kernel
 

@@ -121,7 +121,9 @@ if strcmpi(options.init_method,'greedy')
         K = size(ROI_list,1);
     end
     fprintf('Initializing components with greedy method \n');
-    [Ain, Cin, bin, fin] = greedyROI(Y_ds, K, options, ROI_list);
+%     [Ain, Cin, bin, fin] = greedyROI(Y_ds, K, options, ROI_list);
+
+    [Ain, Cin, bin, fin] = greedyROI(Y_ds, K, options);
 elseif strcmpi(options.init_method, 'greedy_corr')
     fprintf('Initializing components with greedy_corr method \n');
     [Ain, Cin, bin, fin] = greedyROI_corr(Y_ds, K, options);
